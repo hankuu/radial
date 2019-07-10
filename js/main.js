@@ -19,8 +19,95 @@ let svgArea = container.append("svg")
                         .attr("height", cwH)
                         .attr("width", cwW);
 
+//create scales
+let widthScale = d3.scaleLinear()
+                    .range([1,20])
+                    //adjust with data
+
+let opScale = d3.scaleLinear()
+  .range([0.2,1])
+  //adjust with data
 
 
+let colorScale = d3.scaleSequential()
+                  .interpolator(d3.interpolateRainbow)
+                  //adjust with data
+
+/**************************
+* Utilities
+***************************/
+
+// .attr("d", function(d){return
+//   "M"+
+//   (cwW/2+innerR*Math.cos(d.inDays*dayAngle-Math.PI/2))+
+//   ", "
+//   +(cwW/2+innerR*Math.sin(d.inDays*dayAngle-Math.PI/2))+
+// "Q"+(cwW/2+outerR*Math.cos(d.inDays*dayAngle))+", "+(cwW/2+outerR*Math.sin(d.inDays*dayAngle))+
+// " "+(cwW/2+outerR*Math.cos(d.outDays*dayAngle-Math.PI/2))+", "+(cwW/2+outerR*Math.sin(d.outDays*dayAngle-Math.PI/2))
+// })
+
+function getPath(item){
+  let path = "";
+
+  // let start = {
+  //   x: cwW/2 + innerR*Math.cos(item.inDays*dayAngle-Math.PI/2),
+  //   y: cwW/2+innerR*Math.sin(item.inDays*dayAngle-Math.PI/2)
+  // }
+  let start = {
+    x: cwW/2 + outerR*Math.cos(item.inDays*dayAngle-Math.PI/2),
+    y: cwW/2+outerR*Math.sin(item.inDays*dayAngle-Math.PI/2)
+  }
+  let end = {
+    x: cwW/2 + outerR*Math.cos(item.outDays*dayAngle-Math.PI/2),
+    y: cwW/2 + outerR*Math.sin(item.outDays*dayAngle-Math.PI/2)
+  }
+
+  if(item.numDays==0){
+    //Loan length 0 days -> straight line
+    path = "M"+start.x+" "+start.y+" L "+end.x+" "+end.y;
+  }else{
+
+    let mid = {
+      x: 0.5*(start.x+end.x),
+      y: 0.5*(start.y+end.y),
+      dist: Math.sqrt(Math.pow((0.5*(start.x+end.x)-start.x),2)+Math.pow((0.5*(start.y+end.y)-start.y),2))
+    }
+
+    let mid1 = {
+      x: 3/4*start.x+1/4*end.x,
+      y: 3/4*start.y+1/4*end.y,
+      dist: Math.sqrt(Math.pow((3/4*start.x+1/4*end.x-start.x),2)+Math.pow((3/4*start.y+1/4*end.y-start.y),2))
+    }
+
+    let mid2 = {
+      x: 1/4*start.x+3/4*end.x,
+      y: 1/4*start.y+3/4*end.y,
+      dist: Math.sqrt(Math.pow((1/4*start.x+3/4*end.x-mid1.x),2)+Math.pow((1/4*start.y+3/4*end.y-mid1.y),2))
+    }
+
+    console.log("---")
+    console.log(mid2)
+
+   //  path = "M"+start.x+" "+start.y+
+   //  " Q "+(start.x+mid1.dist)+" "+(start.y+mid1.dist/Math.sqrt(3))+
+   // " , "+(mid.x)+" "+(mid.y)+
+   //  " Q "+(mid.x+mid2.dist)+" "+(mid.y+mid2.dist/Math.sqrt(3))+
+   //  "  "+end.x+" "+end.y;
+    path = "M"+start.x+" "+start.y+
+    " Q "+(start.x+mid.dist)+" "+(start.y+mid.dist/Math.sqrt(3))+
+    "  "+end.x+" "+end.y;
+    // path = "M"+start.x+" "+start.y+" Q "+(start.x+mid1.dist)+" "+(start.y+mid1.dist/Math.sqrt(3))+" "+(0.5*(start.x+end.x))+" "+(0.5*(start.y+end.y))+" T "+end.x+" "+end.y;
+
+    path = "M"+start.x+" "+start.y+
+    " Q "+(cwW/2)+" "+(cwH/2)+
+    "  "+end.x+" "+end.y;
+
+
+  }
+
+//"M"+start.x+" "+start.y+" L "+(start.x+mid1.dist)+" "+(start.y+mid1.dist/Math.sqrt(3))+" L"+end.x+" "+end.y;
+  return path;
+}//getPath
 
 
 /**************************
@@ -28,7 +115,7 @@ let svgArea = container.append("svg")
 **************************/
 function loadData() {
   return Promise.all([
-    d3.csv("data/loans1.csv")
+    d3.csv("data/loans.csv")
   ]).then(datasets => {
 
     console.log("Loading data");
@@ -41,6 +128,12 @@ function loadData() {
       d.numDays = +d.numDays;
     })
 
+
+    //Adjust scales
+    widthScale.domain(d3.extent(datastorage.dates, d => d.numDays)).nice();
+    opScale.domain(d3.extent(datastorage.dates, d => d.numDays));
+    colorScale.domain(d3.extent(datastorage.dates, d => d.numDays));
+
     return datastorage;
   })
 }//loadData
@@ -49,57 +142,14 @@ function loadData() {
 * Draw data in window
 **************************/
 function showData(){
-  //inCircle
-  // svgArea.append("g")
-  //       .attr("id","indays")
-  //       .selectAll("circle")
-  //       .data(datastorage.dates)
-  //       .enter()
-  //       .append("circle")
-  //       .attr("cx", function(d,i){return cwW/2+innerR*Math.cos(d.inDays*dayAngle)})
-  //       .attr("cy", function(d,i){return cwH/2+innerR*Math.sin(d.inDays*dayAngle)})
-  //       .attr("r", 5)
-  //       .attr("fill","blue")
-  //       .attr("opacity", 0.5);
-  //
-  //   //outCircle
-  //   svgArea.append("g")
-  //         .attr("id","outdays")
-  //         .selectAll("circle")
-  //         .data(datastorage.dates)
-  //         .enter()
-  //         .append("circle")
-  //         .attr("cx", function(d,i){return cwW/2+outerR*Math.cos(d.outDays*dayAngle)})
-  //         .attr("cy", function(d,i){return cwH/2+outerR*Math.sin(d.outDays*dayAngle)})
-  //         .attr("r", 5)
-  //         .attr("fill","yellow")
-  //         .attr("opacity", 0.5)
-
+  //disc for backgroud
   svgArea.append("circle")
     .attr("cx",cwW/2)
     .attr("cy",cwH/2)
-    .attr("r", innerR)
-    .attr("stroke","yellow")
-    .attr("fill","transparent")
-    svgArea.append("circle")
-      .attr("cx",cwW/2)
-      .attr("cy",cwH/2)
-      .attr("r", outerR)
-      .attr("stroke","yellow")
-      .attr("fill","transparent")
+    .attr("r", outerR)
+    .attr("stroke","black")
+    .attr("fill","black")
 
-
-    // svgArea.append("circle")
-    //   .attr("cx",cwW/2 + innerR*Math.cos(0-Math.PI/2))
-    //   .attr("cy",cwH/2 + innerR*Math.sin(0-Math.PI/2))
-    //   .attr("r", 10)
-    //   .attr("fill","yellow")
-    //
-    //   svgArea.append("circle")
-    //     .attr("cx",cwW/2 + innerR*Math.cos(0))
-    //     .attr("cy",cwH/2 + innerR*Math.sin(0))
-    //     .attr("r", 10)
-    //     .attr("fill","green")
     //lines
     svgArea.append("g")
           .attr("id", "lines")
@@ -107,18 +157,28 @@ function showData(){
           .data(datastorage.dates)
           .enter()
           .append("path")
+          .attr("d", d => getPath(d))
         //   .attr("d", function(d){return "M"+(cwW/2+innerR*Math.cos(d.inDays*dayAngle-Math.PI/2))+" "+(cwW/2+innerR*Math.sin(d.inDays*dayAngle-Math.PI/2))+
         //                                     "L"+(cwW/2+outerR*Math.cos(d.outDays*dayAngle-Math.PI/2))+" "+(cwW/2+outerR*Math.sin(d.outDays*dayAngle-Math.PI/2))
         // })
-        .attr("d", function(d){return "M"+(cwW/2+innerR*Math.cos(d.inDays*dayAngle-Math.PI/2))+", "+(cwW/2+innerR*Math.sin(d.inDays*dayAngle-Math.PI/2))+
-                                          "Q"+(cwW/2+outerR*Math.cos(d.inDays*dayAngle-Math.PI/2))+", "+(cwW/2+outerR*Math.sin(d.inDays*dayAngle-Math.PI/2))+
-                                          " "+(cwW/2+outerR*Math.cos(d.outDays*dayAngle-Math.PI/2))+", "+(cwW/2+outerR*Math.sin(d.outDays*dayAngle-Math.PI/2))
-      })
+      //   .attr("d", function(d){return "M"+(cwW/2+innerR*Math.cos(d.inDays*dayAngle-Math.PI/2))+", "+(cwW/2+innerR*Math.sin(d.inDays*dayAngle-Math.PI/2))+
+      //                                     "Q"+(cwW/2+outerR*Math.cos(d.inDays*dayAngle))+", "+(cwW/2+outerR*Math.sin(d.inDays*dayAngle))+
+      //                                     " "+(cwW/2+outerR*Math.cos(d.outDays*dayAngle-Math.PI/2))+", "+(cwW/2+outerR*Math.sin(d.outDays*dayAngle-Math.PI/2))
+      // })
       //   .attr("d", function(d){return "M"+(cwW/2+innerR*Math.cos(d.inDays*dayAngle))+" "+(cwW/2+innerR*Math.sin(d.inDays*dayAngle))+
       //                                     "L"+(cwW/2+outerR*Math.cos(d.outDays*dayAngle))+" "+(cwW/2+outerR*Math.sin(d.outDays*dayAngle))
       // })
         .attr("fill","none")
-          .attr("stroke", "white")
+        .attr("stroke", "white")
+          // .attr("stroke", d => colorScale(d.numDays))
+           .attr("stroke-width", d => widthScale(d.numDays))
+          .attr("stroke-opacity", d => opScale(d.numDays))
+          .attr("stroke-linecap", "round")
+          // .attr("stroke-width", function(d){
+          //   console.log(d.numDays);
+          //   console.log(widthScale(d.numDays));
+          //   return widthScale(d.numDays);
+          // })
 
 }//showData
 
