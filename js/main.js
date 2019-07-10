@@ -1,10 +1,9 @@
 // container window size
-let cwH = 1000;
-let cwW = 1000;
+let cwH = 800;
+let cwW = 800;
 
-const innerR = 100;
-const outerR = 450;
-//const dayAngle = 360/365;
+//const innerR = 100;
+const outerR = 350;
 const dayAngle = 2*Math.PI/365;
 
 //datastorage
@@ -21,34 +20,26 @@ let svgArea = container.append("svg")
 
 //create scales
 let widthScale = d3.scaleLinear()
-                    .range([1,20])
+                    .range([1,30])
                     //adjust with data
 
 let opScale = d3.scaleLinear()
-  .range([0.2,1])
+  .range([0.2,0.8])
   //adjust with data
 
 
 let colorScale = d3.scaleSequential()
-                  .interpolator(d3.interpolateRainbow)
+                  .interpolator(d3.interpolateMagma)
                   //adjust with data
 
 /**************************
 * Utilities
 ***************************/
 
-// .attr("d", function(d){return
-//   "M"+
-//   (cwW/2+innerR*Math.cos(d.inDays*dayAngle-Math.PI/2))+
-//   ", "
-//   +(cwW/2+innerR*Math.sin(d.inDays*dayAngle-Math.PI/2))+
-// "Q"+(cwW/2+outerR*Math.cos(d.inDays*dayAngle))+", "+(cwW/2+outerR*Math.sin(d.inDays*dayAngle))+
-// " "+(cwW/2+outerR*Math.cos(d.outDays*dayAngle-Math.PI/2))+", "+(cwW/2+outerR*Math.sin(d.outDays*dayAngle-Math.PI/2))
-// })
-
 function getPath(item){
   let path = "";
 
+  //OLDER IDEA with inner circle
   // let start = {
   //   x: cwW/2 + innerR*Math.cos(item.inDays*dayAngle-Math.PI/2),
   //   y: cwW/2+innerR*Math.sin(item.inDays*dayAngle-Math.PI/2)
@@ -85,27 +76,20 @@ function getPath(item){
       dist: Math.sqrt(Math.pow((1/4*start.x+3/4*end.x-mid1.x),2)+Math.pow((1/4*start.y+3/4*end.y-mid1.y),2))
     }
 
-    console.log("---")
-    console.log(mid2)
-
+    //COMPLEX: double curves
+    //TODO: need to be more unique, cannot set angle in stone
    //  path = "M"+start.x+" "+start.y+
    //  " Q "+(start.x+mid1.dist)+" "+(start.y+mid1.dist/Math.sqrt(3))+
    // " , "+(mid.x)+" "+(mid.y)+
    //  " Q "+(mid.x+mid2.dist)+" "+(mid.y+mid2.dist/Math.sqrt(3))+
    //  "  "+end.x+" "+end.y;
-    path = "M"+start.x+" "+start.y+
-    " Q "+(start.x+mid.dist)+" "+(start.y+mid.dist/Math.sqrt(3))+
-    "  "+end.x+" "+end.y;
-    // path = "M"+start.x+" "+start.y+" Q "+(start.x+mid1.dist)+" "+(start.y+mid1.dist/Math.sqrt(3))+" "+(0.5*(start.x+end.x))+" "+(0.5*(start.y+end.y))+" T "+end.x+" "+end.y;
 
+    //SIMPLE: curving toward center
     path = "M"+start.x+" "+start.y+
     " Q "+(cwW/2)+" "+(cwH/2)+
     "  "+end.x+" "+end.y;
-
-
   }
 
-//"M"+start.x+" "+start.y+" L "+(start.x+mid1.dist)+" "+(start.y+mid1.dist/Math.sqrt(3))+" L"+end.x+" "+end.y;
   return path;
 }//getPath
 
@@ -114,11 +98,10 @@ function getPath(item){
 * Load data
 **************************/
 function loadData() {
+  //TODO add more datasets
   return Promise.all([
     d3.csv("data/loans.csv")
   ]).then(datasets => {
-
-    console.log("Loading data");
 
     datastorage.dates = datasets[0];
     datastorage.dates.forEach(function(d){
@@ -127,7 +110,6 @@ function loadData() {
       d.outDays = +d.outDays;
       d.numDays = +d.numDays;
     })
-
 
     //Adjust scales
     widthScale.domain(d3.extent(datastorage.dates, d => d.numDays)).nice();
@@ -149,6 +131,7 @@ function showData(){
     .attr("r", outerR)
     .attr("stroke","black")
     .attr("fill","black")
+    .attr("opacity", 1)
 
     //lines
     svgArea.append("g")
@@ -158,27 +141,11 @@ function showData(){
           .enter()
           .append("path")
           .attr("d", d => getPath(d))
-        //   .attr("d", function(d){return "M"+(cwW/2+innerR*Math.cos(d.inDays*dayAngle-Math.PI/2))+" "+(cwW/2+innerR*Math.sin(d.inDays*dayAngle-Math.PI/2))+
-        //                                     "L"+(cwW/2+outerR*Math.cos(d.outDays*dayAngle-Math.PI/2))+" "+(cwW/2+outerR*Math.sin(d.outDays*dayAngle-Math.PI/2))
-        // })
-      //   .attr("d", function(d){return "M"+(cwW/2+innerR*Math.cos(d.inDays*dayAngle-Math.PI/2))+", "+(cwW/2+innerR*Math.sin(d.inDays*dayAngle-Math.PI/2))+
-      //                                     "Q"+(cwW/2+outerR*Math.cos(d.inDays*dayAngle))+", "+(cwW/2+outerR*Math.sin(d.inDays*dayAngle))+
-      //                                     " "+(cwW/2+outerR*Math.cos(d.outDays*dayAngle-Math.PI/2))+", "+(cwW/2+outerR*Math.sin(d.outDays*dayAngle-Math.PI/2))
-      // })
-      //   .attr("d", function(d){return "M"+(cwW/2+innerR*Math.cos(d.inDays*dayAngle))+" "+(cwW/2+innerR*Math.sin(d.inDays*dayAngle))+
-      //                                     "L"+(cwW/2+outerR*Math.cos(d.outDays*dayAngle))+" "+(cwW/2+outerR*Math.sin(d.outDays*dayAngle))
-      // })
-        .attr("fill","none")
-        .attr("stroke", "white")
-          // .attr("stroke", d => colorScale(d.numDays))
+          .attr("fill","none")
+          .attr("stroke", "white")
            .attr("stroke-width", d => widthScale(d.numDays))
           .attr("stroke-opacity", d => opScale(d.numDays))
           .attr("stroke-linecap", "round")
-          // .attr("stroke-width", function(d){
-          //   console.log(d.numDays);
-          //   console.log(widthScale(d.numDays));
-          //   return widthScale(d.numDays);
-          // })
 
 }//showData
 
