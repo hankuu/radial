@@ -1,1 +1,13 @@
-//TODO: define some styles
+body {
+  font-family: sans-serif;
+}
+
+h1 {
+  text-transform: uppercase;
+  text-align: center;
+}
+
+#container {
+  width: 1000px;
+  margin: auto;
+}

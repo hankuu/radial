@@ -11,7 +11,6 @@ let datastorage = {};
 
 //create window containers
 let container = d3.select("#container")
-                  .append("div")
 
 //create SVG container
 let svgArea = container.append("svg")
@@ -124,14 +123,8 @@ function loadData() {
 * Draw data in window
 **************************/
 function showData(){
-  //disc for backgroud
-  svgArea.append("circle")
-    .attr("cx",cwW/2)
-    .attr("cy",cwH/2)
-    .attr("r", outerR)
-    .attr("stroke","black")
-    .attr("fill","black")
-    .attr("opacity", 1)
+
+    drawBackground();
 
     //lines
     svgArea.append("g")
@@ -147,7 +140,54 @@ function showData(){
           .attr("stroke-opacity", d => opScale(d.numDays))
           .attr("stroke-linecap", "round")
 
+    //Draw months
+    drawMonths();
+
 }//showData
+
+function drawBackground(){
+  //disc for backgroud
+  svgArea.append("circle")
+    .attr("cx",cwW/2)
+    .attr("cy",cwH/2)
+    .attr("r", outerR)
+    .attr("stroke","black")
+    .attr("fill","black")
+
+}//drawBackground
+
+function drawMonths(){
+
+  let height = 20;
+  let point = {
+    x: cwW/2,
+    y: cwH/2
+  }
+
+  for (let i = 0; i < 12; i++) {
+
+    //line between months
+    svgArea.append("path")
+      .attr("d","M"+(cwW/2 + (outerR)*Math.cos(i*Math.PI/6-Math.PI/2))+" "+(cwH/2 + (outerR)*Math.sin(i*Math.PI/6-Math.PI/2))+" L "+(cwW/2 + (outerR+10)*Math.cos(i*Math.PI/6-Math.PI/2))+" "+(cwW/2 + (outerR+10)*Math.sin(i*Math.PI/6-Math.PI/2)))
+      .attr("stroke","black")
+      .attr("stroke-width", 2)
+
+    //month numbers
+    //update text points
+    point.x = cwW/2 + (outerR+20)*Math.cos(Math.PI/6*(i-5/2));
+    point.y = cwH/2 + (outerR+20)*Math.sin(Math.PI/6*(i-5/2));
+
+    svgArea.append("text")
+      .attr("x", point.x)
+      .attr("y", point.y)
+      .attr("alignment-baseline", "middle")
+      .attr("font-size",18)
+      .attr("fill","black")
+      .attr("text-anchor","middle")
+      .text(i+1)
+  }
+
+}//drawMonths
 
 
 /**************************
